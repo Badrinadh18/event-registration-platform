@@ -3,6 +3,7 @@ package com.eventplatform.model;
 import com.eventplatform.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 @Data
 @Entity
+@Builder
 @Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor

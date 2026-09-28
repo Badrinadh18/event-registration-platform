@@ -19,10 +19,10 @@ import java.util.UUID;
 public interface EventRepository extends JpaRepository<Event, UUID> {
 
     // Standard read-only fetch
-    Optional<Event> findByIdAndStatus(UUID eventId, EventStatus status);
+    Optional<Event> findByEventIdAndStatus(UUID eventId, EventStatus status);
 
     // CRITICAL: Pessimistic write lock to prevent overselling
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM Event e WHERE e.eventId = :id")
-    Optional<Event> findByIdForUpdate(@Param("id") UUID id);
+    Optional<Event> findByIdForUpdate(@Param("id") UUID eventId);
 }

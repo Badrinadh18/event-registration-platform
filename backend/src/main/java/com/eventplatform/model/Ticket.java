@@ -27,8 +27,7 @@ public class Ticket {
     private Registration registrationId;
 
     @Column(nullable = false, unique = true, updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID token; // UUID
+    private String token; // UUID
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

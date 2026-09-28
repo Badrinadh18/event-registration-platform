@@ -33,7 +33,7 @@ public class TeamRegistration {
     private Integer memberCount;
 
     @Column(nullable = false, unique = true, updatable = false)
-    private UUID groupToken; // UUID used to group the generated tickets
+    private String groupToken; // UUID used to group the generated tickets
 
     @CreationTimestamp
     @Column(updatable = false)
