@@ -7,17 +7,23 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Builder
 @Entity
-@Data
 @Table(name = "events")
+@Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
+// Overrides the standard DELETE command with an UPDATE for soft-deleting
+@SQLDelete(sql = "UPDATE events SET is_deleted = true WHERE event_id=?")
+// Automatically hides deleted events from all standard SELECT queries
+@SQLRestriction("is_deleted = false")
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -25,10 +31,13 @@ public class Event {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private User organiserId;
+    private User organiser;
 
     @Column(nullable = false)
     private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     private String venue;
 
@@ -38,7 +47,6 @@ public class Event {
     @Column(nullable = false)
     private Integer maxCapacity;
 
-    // We maintain a running count to avoid COUNT() queries during high concurrency
     @Column(nullable = false)
     @Builder.Default
     private Integer currentConfirmedCount = 0;
@@ -50,7 +58,27 @@ public class Event {
     @Column(nullable = false)
     private EventStatus status;
 
+    // --- New Requirement Flags ---
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isRefundEligible = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isFeatured = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isSuppressed = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+
 }
