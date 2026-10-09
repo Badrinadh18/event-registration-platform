@@ -29,6 +29,7 @@ public class RegistrationService {
     private final RegistrationRepository registrationRepository;
     private final TeamRegistrationRepository teamRegistrationRepository;
     private final UserRepository userRepository;
+    private final TicketService ticketService;
 
     @Transactional
     public String registerSingleUser(UUID eventId, String email) {
@@ -56,6 +57,8 @@ public class RegistrationService {
             event.setCurrentConfirmedCount(event.getCurrentConfirmedCount() + 1);
             eventRepository.save(event);
             registrationRepository.save(registration);
+
+            ticketService.generateTicket(registration);//ticket generation
             return "Registration confirmed.";
         } else if (event.getCurrentWaitlistCount() < event.getWaitlistCapacity()) {
             registration.setStatus(RegistrationStatus.WAITLISTED);
@@ -89,6 +92,8 @@ public class RegistrationService {
         registration.setStatus(RegistrationStatus.CANCELLED);
         registrationRepository.save(registration);
 
+        ticketService.cancelTicket(registration.getRegistrationId());
+
         Event event = eventRepository.findByIdForUpdate(registration.getEvent().getEventId())
                 .orElseThrow();
 
@@ -108,6 +113,8 @@ public class RegistrationService {
                 Registration promoted = nextInLine.get();
                 promoted.setStatus(RegistrationStatus.CONFIRMED);
                 registrationRepository.save(promoted);
+
+                ticketService.generateTicket(promoted);
 
                 event.setCurrentConfirmedCount(event.getCurrentConfirmedCount() + 1);
                 event.setCurrentWaitlistCount(event.getCurrentWaitlistCount() - 1);
@@ -181,6 +188,8 @@ public class RegistrationService {
 
         registrationRepository.saveAll(registrationsToSave);
 
+        registrationsToSave.forEach(ticketService::generateTicket);//ticket generation for team
+
         return "Team registration confirmed. Group Token: " + teamReg.getGroupToken() + ". Individual registrations generated.";
     }
 
@@ -197,6 +206,8 @@ public class RegistrationService {
         for (Registration reg : teamMembers) {
             reg.setStatus(RegistrationStatus.CANCELLED);
             reg.setTeamRegistration(null);
+
+            ticketService.cancelTicket(reg.getRegistrationId());
         }
         registrationRepository.saveAll(teamMembers);
 
@@ -208,6 +219,9 @@ public class RegistrationService {
         for (Registration promotedUser : usersToPromote) {
             promotedUser.setStatus(RegistrationStatus.CONFIRMED);
             registrationRepository.save(promotedUser);
+
+            ticketService.generateTicket(promotedUser);
+
             event.setCurrentConfirmedCount(event.getCurrentConfirmedCount() + 1);
             event.setCurrentWaitlistCount(event.getCurrentWaitlistCount() - 1);
         }

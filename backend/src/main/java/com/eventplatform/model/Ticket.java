@@ -24,7 +24,7 @@ public class Ticket {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
-    private Registration registrationId;
+    private Registration registration;
 
     @Column(nullable = false, unique = true, updatable = false)
     private String token; // UUID

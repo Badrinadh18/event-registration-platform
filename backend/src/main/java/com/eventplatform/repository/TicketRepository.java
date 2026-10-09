@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     Optional<Ticket> findByToken(String token);
+    Optional<Ticket> findByRegistration_RegistrationId(UUID registrationId);
 }
