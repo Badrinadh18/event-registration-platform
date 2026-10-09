@@ -80,5 +80,11 @@ public class Event {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer waitlistCapacity = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer currentWaitlistCount = 0;
 }

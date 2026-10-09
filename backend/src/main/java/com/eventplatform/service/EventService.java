@@ -30,6 +30,7 @@ public class EventService {
                 .venue(request.getVenue())
                 .eventDate(request.getEventDate())
                 .maxCapacity(request.getMaxCapacity())
+                .waitlistCapacity(request.getWaitlistCapacity())
                 .price(request.getPrice())
                 .organiser(organiser)
                 .status(EventStatus.DRAFT)

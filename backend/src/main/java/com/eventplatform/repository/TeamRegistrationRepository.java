@@ -13,5 +13,7 @@ public interface TeamRegistrationRepository extends JpaRepository<TeamRegistrati
     Optional<TeamRegistration> findByGroupToken(String groupToken);
 
     // Validates if the lead user already has a team registered for this event
-    boolean existsByLeadUserIdAndEventId(UUID leadUserId, UUID eventId);
+    boolean existsByLeadUser_UserIdAndEvent_EventId(UUID leadUserId, UUID eventId);
+
+    Optional<TeamRegistration> findByIdAndLeadUser_Email(UUID id, String email);
 }

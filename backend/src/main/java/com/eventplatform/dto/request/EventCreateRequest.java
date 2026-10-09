@@ -27,6 +27,10 @@ public class EventCreateRequest {
     @Min(value = 1, message = "Capacity must be at least 1")
     private Integer maxCapacity;
 
+    @NotNull(message = "Waitlist capacity is required")
+    @Min(value = 0, message = "Waitlist capacity cannot be negative")
+    private Integer waitlistCapacity;
+
     @NotNull(message = "Price is required")
     @Min(value = 0, message = "Price cannot be negative")
     private BigDecimal price;
