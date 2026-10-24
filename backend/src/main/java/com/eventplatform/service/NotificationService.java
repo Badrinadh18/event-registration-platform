@@ -19,7 +19,8 @@ public class NotificationService {
     public void sendVerificationEmailAsync(String email, String token) {
         String subject = "Verify your Event Platform Account";
         // In a production environment, this would point to your frontend domain
-        String verificationUrl = "http://localhost:9090/api/auth/verify?token=" + token;
+//        String verificationUrl = "http://localhost:9090/api/auth/verify?token=" + token;
+        String verificationUrl = "http://localhost:5173/verify?token=" + token;
         String body = String.format("Welcome to the Event Platform!\n\nPlease click the link below to verify your email address:\n%s\n\nThis link will expire shortly.", verificationUrl);
         emailService.sendEmailAsync(email, subject, body);
     }
