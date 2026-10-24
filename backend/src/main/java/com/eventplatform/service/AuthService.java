@@ -47,6 +47,15 @@ public class AuthService {
     }
 
     public AuthResponse login(String email, String password) {
+        // 1. Fetch the user from the database first
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+        // 2. STRICT GUARD: Check if the user is verified before allowing authentication
+        if (!user.isVerified()) {
+            // Throwing this specific exception triggers the frontend's "Resend Verification" UI
+            throw new IllegalStateException("Account not verified. Please check your email for the verification link.");
+        }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
         );
