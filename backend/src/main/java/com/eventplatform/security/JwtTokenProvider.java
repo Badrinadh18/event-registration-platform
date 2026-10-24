@@ -37,8 +37,15 @@ public class JwtTokenProvider {
     }
 
     private String buildToken(UserDetails userDetails, long expiration) {
+        // 1. Extract the role from the UserDetails object
+        String role = userDetails.getAuthorities().stream()
+                .findFirst()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .orElse("ROLE_ATTENDEE");
+
         return Jwts.builder()
                 .subject(userDetails.getUsername())
+                .claim("role",role)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
