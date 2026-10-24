@@ -47,3 +47,34 @@ logs/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Frontend - Node.js / React / Vite
+
+# Dependencies
+frontend/node_modules/
+
+# Vite build output
+frontend/dist/
+frontend/dist-ssr/
+
+# Local environment variables and secrets
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Debug logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/pnpm-debug.log*
+
+# Test and coverage output
+frontend/coverage/
+
+# Editor and OS files
+frontend/.vscode/
+frontend/.idea/
+frontend/.DS_Store
+frontend/Thumbs.db
+
+# Optional: Vite cache
+frontend/node_modules/.vite/
