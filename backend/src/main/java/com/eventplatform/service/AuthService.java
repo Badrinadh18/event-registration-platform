@@ -24,7 +24,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final RedisTokenService redisTokenService;
     private final UserDetailsService userDetailsService;
-    // private final NotificationService notificationService;
+    private final NotificationService notificationService;
 
     @Transactional
     public void register(String name, String email, String plainPassword, Role role) {
@@ -43,7 +43,7 @@ public class AuthService {
         userRepository.save(user);
 
         String token = redisTokenService.generateEmailVerificationToken(email);
-        // notificationService.sendVerificationEmailAsync(email, token);
+         notificationService.sendVerificationEmailAsync(email, token);
     }
 
     public AuthResponse login(String email, String password) {
@@ -89,7 +89,7 @@ public class AuthService {
     public void forgotPassword(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             String token = redisTokenService.generatePasswordResetToken(email);
-            // notificationService.sendPasswordResetEmailAsync(email, token);
+             notificationService.sendPasswordResetEmailAsync(email, token);
         });
     }
 
@@ -122,7 +122,7 @@ public class AuthService {
         // Generate a new token in Redis
         String newToken = redisTokenService.generateEmailVerificationToken(email);
 
-        //notificationService.sendVerificationEmailAsync(email, newToken);
+        notificationService.sendVerificationEmailAsync(email, newToken);
     }
 
 }

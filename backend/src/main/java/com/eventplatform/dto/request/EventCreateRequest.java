@@ -1,5 +1,6 @@
 package com.eventplatform.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +22,7 @@ public class EventCreateRequest {
 
     @NotNull(message = "Event date is required")
     @Future(message = "Event date must be in the future")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm a")
     private LocalDateTime eventDate;
 
     @NotNull(message = "Capacity is required")

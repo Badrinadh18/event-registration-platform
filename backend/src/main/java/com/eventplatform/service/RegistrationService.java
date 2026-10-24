@@ -2,10 +2,7 @@ package com.eventplatform.service;
 
 import com.eventplatform.exception.DuplicateRegistrationException;
 import com.eventplatform.exception.ResourceNotFoundException;
-import com.eventplatform.model.Event;
-import com.eventplatform.model.Registration;
-import com.eventplatform.model.TeamRegistration;
-import com.eventplatform.model.User;
+import com.eventplatform.model.*;
 import com.eventplatform.model.enums.EventStatus;
 import com.eventplatform.model.enums.RegistrationStatus;
 import com.eventplatform.repository.EventRepository;
@@ -30,6 +27,7 @@ public class RegistrationService {
     private final TeamRegistrationRepository teamRegistrationRepository;
     private final UserRepository userRepository;
     private final TicketService ticketService;
+    private final NotificationService notificationService;
 
     @Transactional
     public String registerSingleUser(UUID eventId, String email) {
@@ -58,13 +56,15 @@ public class RegistrationService {
             eventRepository.save(event);
             registrationRepository.save(registration);
 
-            ticketService.generateTicket(registration);//ticket generation
+            Ticket ticket=ticketService.generateTicket(registration);//ticket generation
+            notificationService.sendRegistrationConfirmed(registration, ticket);
             return "Registration confirmed.";
         } else if (event.getCurrentWaitlistCount() < event.getWaitlistCapacity()) {
             registration.setStatus(RegistrationStatus.WAITLISTED);
             event.setCurrentWaitlistCount(event.getCurrentWaitlistCount() + 1);
             eventRepository.save(event);
             registrationRepository.save(registration);
+            notificationService.sendWaitlistJoined(registration); // Waitlist dispatch
             return "Event full. You have been added to the waitlist.";
         } else {
             throw new IllegalStateException("Event and waitlist are completely full.");
@@ -114,7 +114,8 @@ public class RegistrationService {
                 promoted.setStatus(RegistrationStatus.CONFIRMED);
                 registrationRepository.save(promoted);
 
-                ticketService.generateTicket(promoted);
+                Ticket newTicket=ticketService.generateTicket(promoted);
+                notificationService.sendWaitlistPromoted(promoted, newTicket);
 
                 event.setCurrentConfirmedCount(event.getCurrentConfirmedCount() + 1);
                 event.setCurrentWaitlistCount(event.getCurrentWaitlistCount() - 1);
@@ -188,7 +189,11 @@ public class RegistrationService {
 
         registrationRepository.saveAll(registrationsToSave);
 
-        registrationsToSave.forEach(ticketService::generateTicket);//ticket generation for team
+        //Issue tickets and dispatch email for each team member
+        for (Registration savedReg : registrationsToSave) {
+            Ticket ticket = ticketService.generateTicket(savedReg);
+            notificationService.sendRegistrationConfirmed(savedReg, ticket);
+        }
 
         return "Team registration confirmed. Group Token: " + teamReg.getGroupToken() + ". Individual registrations generated.";
     }
@@ -220,7 +225,8 @@ public class RegistrationService {
             promotedUser.setStatus(RegistrationStatus.CONFIRMED);
             registrationRepository.save(promotedUser);
 
-            ticketService.generateTicket(promotedUser);
+            Ticket newTicket = ticketService.generateTicket(promotedUser);
+            notificationService.sendWaitlistPromoted(promotedUser, newTicket);
 
             event.setCurrentConfirmedCount(event.getCurrentConfirmedCount() + 1);
             event.setCurrentWaitlistCount(event.getCurrentWaitlistCount() - 1);

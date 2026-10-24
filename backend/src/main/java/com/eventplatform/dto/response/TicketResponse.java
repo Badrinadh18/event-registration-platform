@@ -1,5 +1,6 @@
 package com.eventplatform.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 public class TicketResponse {
     private String eventName;
     private String venue;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm a")
     private LocalDateTime eventDate;
     private String attendeeName;
     private String attendeeEmail;

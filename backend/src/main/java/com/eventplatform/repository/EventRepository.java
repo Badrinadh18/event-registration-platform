@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 // By using @Lock(LockModeType.PESSIMISTIC_WRITE), Spring tells Hibernate to append FOR UPDATE to the SQL query.
@@ -25,4 +27,8 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM Event e WHERE e.eventId = :id")
     Optional<Event> findByIdForUpdate(@Param("id") UUID eventId);
+
+
+    // Locates events starting within a specific time window for the 24-hour reminder job
+    List<Event> findByEventDateBetweenAndStatus(LocalDateTime start, LocalDateTime end, EventStatus status);
 }

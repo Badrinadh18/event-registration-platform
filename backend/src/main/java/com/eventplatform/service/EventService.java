@@ -2,14 +2,18 @@ package com.eventplatform.service;
 
 import com.eventplatform.dto.request.EventCreateRequest;
 import com.eventplatform.model.Event;
+import com.eventplatform.model.Registration;
 import com.eventplatform.model.User;
 import com.eventplatform.model.enums.EventStatus;
+import com.eventplatform.model.enums.RegistrationStatus;
 import com.eventplatform.repository.EventRepository;
+import com.eventplatform.repository.RegistrationRepository;
 import com.eventplatform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,6 +22,8 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
+    private final RegistrationRepository registrationRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Event createEvent(EventCreateRequest request, String organiserEmail) {
@@ -53,7 +59,14 @@ public class EventService {
         event.setRefundEligible(true); // Triggers refund eligibility flag
         eventRepository.save(event);
 
-        // Notification logic would be triggered here in Phase 5 to alert attendees
+        // Fetch all confirmed users using the new repository method
+        List<Registration> affectedRegistrations = registrationRepository
+                .findByEvent_EventIdAndStatus(eventId, RegistrationStatus.CONFIRMED);
+
+        // Dispatch batch cancellation emails asynchronously
+        if (!affectedRegistrations.isEmpty()) {
+            notificationService.sendEventCancelled(event, affectedRegistrations);
+        }
     }
 
     @Transactional
