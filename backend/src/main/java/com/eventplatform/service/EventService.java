@@ -108,4 +108,7 @@ public class EventService {
         }
         return event;
     }
+    public List<Event> getAllEvents() {
+        return eventRepository.findAll();
+    }
 }

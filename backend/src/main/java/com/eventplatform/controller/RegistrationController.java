@@ -19,14 +19,14 @@ public class RegistrationController {
     private final RegistrationService registrationService;
 
     @PostMapping("/{eventId}/register")
-    @PreAuthorize("hasAnyRole('ATTENDEE', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ATTENDEE','ORGANISER', 'ADMIN')")
     public ResponseEntity<String> registerSingle(@PathVariable UUID eventId, Authentication authentication) {
         String response = registrationService.registerSingleUser(eventId, authentication.getName());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{eventId}/team-register")
-    @PreAuthorize("hasAnyRole('ATTENDEE', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ATTENDEE','ORGANISER', 'ADMIN')")
     public ResponseEntity<String> registerTeam(
             @PathVariable UUID eventId,
             @Valid @RequestBody TeamRegisterRequest request,
@@ -36,14 +36,14 @@ public class RegistrationController {
     }
 
     @DeleteMapping("/registrations/{registrationId}")
-    @PreAuthorize("hasAnyRole('ATTENDEE', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ATTENDEE','ORGANISER', 'ADMIN')")
     public ResponseEntity<String> cancelRegistration(@PathVariable UUID registrationId, Authentication authentication) {
         String response = registrationService.cancelSingleRegistration(registrationId, authentication.getName());
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/team-registrations/{teamRegId}")
-    @PreAuthorize("hasAnyRole('ATTENDEE', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ATTENDEE','ORGANISER', 'ADMIN')")
     public ResponseEntity<String> cancelTeamRegistration(@PathVariable UUID teamRegId, Authentication authentication) {
         String response = registrationService.cancelTeamRegistration(teamRegId, authentication.getName());
         return ResponseEntity.ok(response);

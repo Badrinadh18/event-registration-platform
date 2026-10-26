@@ -22,7 +22,6 @@ public class EventCreateRequest {
 
     @NotNull(message = "Event date is required")
     @Future(message = "Event date must be in the future")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm a")
     private LocalDateTime eventDate;
 
     @NotNull(message = "Capacity is required")
