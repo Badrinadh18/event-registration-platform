@@ -1,5 +1,6 @@
 package com.eventplatform.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -22,11 +24,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateRegistrationException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateRegistration(DuplicateRegistrationException ex) {
+        log.warn("Business Rule Violation (Duplicate): {}", ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.warn("Resource Not Found: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
@@ -34,16 +38,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException ex) {
+        log.warn("Business Logic Constraint (IllegalState): {}", ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Invalid Input (IllegalArgument): {}", ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<Map<String, String>> handleSecurityException(SecurityException ex) {
+        log.warn("Security Constraint Violation: {}", ex.getMessage());
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
@@ -52,11 +59,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
         // Obfuscate the exact reason to prevent user enumeration attacks
+        log.warn("Authentication Failed: Bad credentials provided.");
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Authorization Failed: User attempted to access a forbidden resource.");
         return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to access this resource.");
     }
 
@@ -68,21 +77,25 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage())
         );
+        log.warn("Payload Validation Failed: {}", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Malformed HTTP Request (Not Readable): {}", ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request or invalid data types provided.");
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, String>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        log.warn("Unsupported HTTP Method: {}", ex.getMessage());
         return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage());
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<Map<String, String>> handleNoHandlerFound(NoHandlerFoundException ex) {
+        log.warn("404 Endpoint Not Found: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, "The requested endpoint does not exist.");
     }
 
@@ -90,6 +103,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.error("Database Integrity Violation: {}", ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, "Database conflict: A record with these unique constraints already exists.");
     }
 
@@ -97,7 +111,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        // In a production environment, you should log 'ex.getMessage()' to your logging framework here
+        // CRITICAL: Passing the 'ex' object as the final parameter tells SLF4J to print the full stack trace to the log file.
+        // This is how we debug server crashes without exposing internal architecture details to the frontend.
+        log.error("CRITICAL UNEXPECTED ERROR: {}", ex.getMessage(), ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again later.");
     }
 

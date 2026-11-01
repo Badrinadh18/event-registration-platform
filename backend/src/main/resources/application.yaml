@@ -1,7 +1,4 @@
 spring:
-  config:
-    import: optional:file:.env[.properties]
-
   application:
     name: eventplatform
 
@@ -12,17 +9,19 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    # Use "validate" in prod so Hibernate doesn't accidentally drop tables, use "update" for dev
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${HIBERNATE_DDL:update}
+    show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${SHOW_SQL:false}
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      # Default to localhost for dev, but allow override for prod
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   mail:
     host: ${MAIL_HOST}
@@ -38,9 +37,11 @@ spring:
             required: true
 
 jwt:
+  # The secret must be at least 32 characters long
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 server:
-  port: 9090
+  # Default to 9090, but allow cloud platforms like Render to inject their own PORT
+  port: ${PORT:9090}

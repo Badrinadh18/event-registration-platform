@@ -2,6 +2,7 @@ package com.eventplatform.config;
 
 import com.eventplatform.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,8 +22,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 import java.util.List;
 
+/**
+ * Core security configuration class.
+ * Defines the application's security perimeter, CORS policies, password encoding,
+ * and stateless JWT session management.
+ */
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -31,28 +39,47 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    // Injects the allowed frontend origins from environment variables, defaulting to local Vite server
+    @org.springframework.beans.factory.annotation.Value("${ALLOWED_ORIGINS:http://localhost:5173}")
+    private String allowedOrigins;
+
+    /**
+     * Configures the main HTTP security filter chain.
+     * Disables CSRF (safe for stateless APIs), sets public endpoints, and enforces JWT auth.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider) throws Exception {
+        log.info("Initializing Spring Security Filter Chain. Stateless JWT policy enforced.");
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**",
+                        // Public Endpoints
+                        .requestMatchers(
+                                "/api/auth/**",
                                 "/error",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html").permitAll()
+                                "/swagger-ui.html"
+                        ).permitAll()
+                        // Role-Restricted Endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/events/**").hasAnyRole("ORGANISER", "ADMIN","")
+                        // Default fallback: all other requests require a valid JWT
                         .anyRequest().authenticated()
                 )
+                // Ensures Spring does not create a JSESSIONID (Stateless)
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
+                // Injects our custom JWT filter before the standard Spring Username/Password filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    /**
+     * Wires the UserDetailsService and PasswordEncoder together to verify credentials during login.
+     */
     @Bean
     public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
@@ -65,20 +92,34 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Defines the hashing algorithm used for user passwords. BCrypt is the industry standard.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures Cross-Origin Resource Sharing (CORS).
+     * Determines which external domains (like the React frontend) are allowed to call this API.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        log.info("Configuring CORS policy. Allowed Origins: [{}]", allowedOrigins);
+
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Vite default port
+
+        // Splits the comma-separated environment variable into a List of allowed URLs
+        configuration.setAllowedOrigins(java.util.Arrays.asList(allowedOrigins.split(",")));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 }
