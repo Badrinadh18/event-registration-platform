@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }) {
                     </a>
                     
                     {/* Role-Specific Navigation */}
-                    {user?.role === 'ORGANISER' && (
+                    {(user?.role === 'ORGANISER' || user?.role === 'ADMIN') && (
                         <a href="/organiser-panel" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition mt-4 border-t border-slate-700 pt-4">
                             <LayoutDashboard size={20} /> Organizer Tools
                         </a>

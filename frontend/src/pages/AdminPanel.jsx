@@ -136,7 +136,7 @@ export default function AdminPanel() {
                                                 </span>
                                             </td>
                                             <td className="p-3">
-                                                {u.isVerified ? (
+                                                {u.verified || u.isVerified ? (
                                                     <span className="text-green-400 text-xs font-bold">Verified</span>
                                                 ) : (
                                                     <span className="text-yellow-500 text-xs font-bold">Pending</span>

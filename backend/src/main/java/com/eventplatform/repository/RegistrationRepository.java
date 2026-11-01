@@ -35,4 +35,6 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
     // Locates all confirmed attendees for a specific event (used for event cancellations and reminders)
     List<Registration> findByEvent_EventIdAndStatus(UUID eventId, RegistrationStatus status);
 
+    List<Registration> findByUser_UserId(UUID userId);
+
 }
