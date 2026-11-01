@@ -4,7 +4,9 @@ import LandingPage from './pages/LandingPage';
 import VerifyEmail from './pages/VerifyEmail';
 import DashboardLayout from './layouts/DashboardLayout';
 import EventsDirectory from './pages/EventsDirectory';
-import AdminPanel from './pages/AdminPanel'; // 1. ADD THIS IMPORT
+import AdminPanel from './pages/AdminPanel'; 
+import MyTickets from './pages/MyTickets';
+import OrganiserPanel from './pages/OrganiserPanel';
 
 const ProtectedRoute = ({ children }) => {
     return <DashboardLayout>{children}</DashboardLayout>;
@@ -24,10 +26,21 @@ export default function App() {
                         </ProtectedRoute>
                     } />
 
-                    {/* 2. ADD THIS PROTECTED ROUTE */}
                     <Route path="/admin-panel" element={
                         <ProtectedRoute>
                             <AdminPanel />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/tickets" element={
+                        <ProtectedRoute>
+                            <MyTickets />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/organiser-panel" element={
+                        <ProtectedRoute>
+                            <OrganiserPanel />
                         </ProtectedRoute>
                     } />
                     

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -22,4 +23,7 @@ public class TicketResponse {
     private String ticketToken;
     private String status;
     private String metadata;
+
+    private UUID registrationId;
+    private boolean isTeamRegistration;
 }

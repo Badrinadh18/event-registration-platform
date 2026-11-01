@@ -27,17 +27,18 @@ public class NotificationService {
 
     public void sendPasswordResetEmailAsync(String email, String token) {
         String subject = "Password Reset Request";
-        String resetUrl = "http://localhost:9090/api/auth/reset-password?token=" + token;
+        String resetUrl = "http://localhost:5173/reset-password?token=" + token;
         String body = String.format("We received a request to reset your password.\n\nClick the link below to set a new password:\n%s\n\nIf you did not request this, please ignore this email.", resetUrl);
         emailService.sendEmailAsync(email, subject, body);
     }
 
     public void sendRegistrationConfirmed(Registration registration, Ticket ticket) {
         String subject = "Registration Confirmed: " + registration.getEvent().getTitle();
-        String body = String.format("Hello %s,\n\nYour registration for %s is confirmed!\n\nYour Ticket QR Token: %s\nEvent Date: %s\nVenue: %s\n\nSee you there!",
+        String ticketUrl = "http://localhost:5173/tickets";
+        String body = String.format("Hello %s,\n\nYour registration for %s is confirmed!\n\nYour Ticket link: %s\nEvent Date: %s\nVenue: %s\n\nSee you there!",
                 registration.getUser().getName(),
                 registration.getEvent().getTitle(),
-                ticket.getToken(),
+                ticketUrl,
                 registration.getEvent().getEventDate(),
                 registration.getEvent().getVenue());
         emailService.sendEmailAsync(registration.getUser().getEmail(), subject, body);
@@ -62,7 +63,7 @@ public class NotificationService {
         emailService.sendEmailAsync(registration.getUser().getEmail(), subject, body);
     }
 
-    public void sendEventCancelled(Event event, List<Registration> affectedRegistrations) {
+    public void sendEventCancelledByOrganiser(Event event, List<Registration> affectedRegistrations) {
         String subject = "IMPORTANT: Event Cancelled - " + event.getTitle();
         String baseBody = "Hello %s,\n\nWe regret to inform you that the event '%s' scheduled for %s has been cancelled by the organizer. If you paid for a ticket, you are eligible for a refund.\n\nApologies for the inconvenience.";
 

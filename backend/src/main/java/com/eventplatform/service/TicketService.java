@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -81,5 +82,35 @@ public class TicketService {
                 .status(ticket.getStatus().name())
                 .metadata("PDF generation module ready to plug in.")
                 .build();
+    }
+    @Transactional(readOnly = true)
+    public List<TicketResponse> getTicketsByUserEmail(String userEmail) {
+        List<Ticket> tickets = ticketRepository.findAllTicketsByUserEmailEagerly(userEmail);
+
+        return tickets.stream().map(ticket -> {
+            var registration = ticket.getRegistration();
+            var event = registration != null ? registration.getEvent() : null;
+            var user = registration != null ? registration.getUser() : null;
+            var teamReg = registration != null ? registration.getTeamRegistration() : null;
+
+            return TicketResponse.builder()
+                    // Use fallback strings if any relationship is missing
+                    .eventName(event != null && event.getTitle() != null ? event.getTitle() : "Event Name Unavailable")
+                    .venue(event != null && event.getVenue() != null ? event.getVenue() : "Venue TBD")
+                    .eventDate(event != null ? event.getEventDate() : null)
+
+                    // Fallback to the requested email if the user object is detached
+                    .attendeeName(user != null && user.getName() != null ? user.getName() : "Attendee")
+                    .attendeeEmail(user != null && user.getEmail() != null ? user.getEmail() : userEmail)
+
+                    // Fallback for ticket details
+                    .ticketToken(ticket.getToken() != null ? ticket.getToken() : UUID.randomUUID().toString())
+                    .status(ticket.getStatus() != null ? ticket.getStatus().name() : "UNKNOWN")
+
+                    // Registration tracking
+                    .registrationId(registration != null ? registration.getRegistrationId() : null)
+                    .isTeamRegistration(teamReg != null)
+                    .build();
+        }).toList();
     }
 }

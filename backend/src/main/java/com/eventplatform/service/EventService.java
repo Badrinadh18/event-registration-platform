@@ -65,7 +65,7 @@ public class EventService {
 
         // Dispatch batch cancellation emails asynchronously
         if (!affectedRegistrations.isEmpty()) {
-            notificationService.sendEventCancelled(event, affectedRegistrations);
+            notificationService.sendEventCancelledByOrganiser(event, affectedRegistrations);
         }
     }
 

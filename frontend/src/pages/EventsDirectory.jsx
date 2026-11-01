@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import api from '../api/axiosConfig';
 import { AuthContext } from '../context/AuthContext';
 import CreateEventModal from '../components/CreateEventModal';
+import RegistrationModal from '../components/RegistrationModal'; 
 
 export default function EventsDirectory() {
     const { user } = useContext(AuthContext);
@@ -9,6 +10,7 @@ export default function EventsDirectory() {
     const [loading, setLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null); 
+    const [registrationType, setRegistrationType] = useState('SINGLE');
     const [error, setError] = useState('');
 
     const fetchEvents = async () => {
@@ -64,6 +66,13 @@ export default function EventsDirectory() {
         <div className="flex gap-8 relative">
             <CreateEventModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onEventCreated={fetchEvents} />
             
+            <RegistrationModal 
+                isOpen={!!selectedEvent} 
+                onClose={() => setSelectedEvent(null)} 
+                event={selectedEvent}
+                registrationType={registrationType} 
+                onRegisterSuccess={fetchEvents} 
+            />
 
             <div className="flex-1">
                 <h1 className="text-2xl font-bold mb-6">Upcoming Events</h1>
@@ -100,11 +109,18 @@ export default function EventsDirectory() {
 
                                         <div className="flex gap-2 mt-auto">
                                             <button 
-                                                onClick={() => setSelectedEvent(event)}
+                                                onClick={() => { setSelectedEvent(event); setRegistrationType('SINGLE'); }}
                                                 disabled={event.status !== 'PUBLISHED'}
                                                 className="flex-1 bg-brand-primary/20 hover:bg-brand-primary disabled:opacity-50 disabled:hover:bg-brand-primary/20 hover:text-white text-brand-primary py-2 rounded font-medium transition text-sm"
                                             >
-                                                Register
+                                                single-Register
+                                            </button>
+                                            <button 
+                                                onClick={() => { setSelectedEvent(event); setRegistrationType('TEAM'); }}
+                                                disabled={event.status !== 'PUBLISHED'}
+                                                className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded font-medium transition text-sm"
+                                            >
+                                                Team-Register
                                             </button>
                                         </div>
                                         

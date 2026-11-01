@@ -47,4 +47,5 @@ public class AuthController {
         authService.resendVerificationEmail(email);
         return ResponseEntity.ok("A new verification link has been generated. Please check your email.");
     }
+
 }
