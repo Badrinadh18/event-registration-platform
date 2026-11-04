@@ -15,17 +15,21 @@ export default function DashboardLayout({ children }) {
                 </div>
                 
                 <nav className="flex-1 px-4 space-y-2 mt-4">
-                    <a href="/dashboard" className="flex items-center gap-3 px-4 py-3 bg-brand-primary/10 text-brand-primary rounded-lg font-medium">
-                        <Home size={20} /> Events
-                    </a>
-                    <a href="/tickets" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">
-                        <Ticket size={20} /> My Tickets
-                    </a>
+                    {(user?.role === 'ATTENDEE' ) && (
+                        <>
+                        <a href="/dashboard" className="flex items-center gap-3 px-4 py-3 bg-brand-primary/10 text-brand-primary rounded-lg font-medium">
+                            <Home size={20} /> Events
+                        </a>
+                        <a href="/tickets" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">
+                            <Ticket size={20} /> My Tickets
+                        </a>
+                        </>
+                    )}
                     
                     {/* Role-Specific Navigation */}
                     {(user?.role === 'ORGANISER' || user?.role === 'ADMIN') && (
                         <a href="/organiser-panel" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition mt-4 border-t border-slate-700 pt-4">
-                            <LayoutDashboard size={20} /> Organizer Tools
+                            <LayoutDashboard size={20} /> Organizer Dashboard
                         </a>
                     )}
                     {user?.role === 'ADMIN' && (

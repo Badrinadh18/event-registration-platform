@@ -1,5 +1,6 @@
 package com.eventplatform.security;
 
+import com.eventplatform.model.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -38,36 +39,31 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Generates a short-lived JWT Access Token for the authenticated user.
+     * Generates a short-lived JWT Access Token for the authenticated user with respective role.
      */
-    public String generateToken(UserDetails userDetails) {
-        log.debug("Generating new JWT Access Token for user [{}]", userDetails.getUsername());
-        return buildToken(userDetails, jwtExpiration);
+    public String generateToken(UserDetails userDetails, Role requestedRole) {
+        log.debug("Generating new JWT Access Token for user [{}] scoped to [{}]", userDetails.getUsername(), requestedRole);
+        return buildToken(userDetails, jwtExpiration, requestedRole);
     }
 
     /**
      * Generates a long-lived JWT Refresh Token for session rotation.
      */
-    public String generateRefreshToken(UserDetails userDetails) {
+    public String generateRefreshToken(UserDetails userDetails,Role requestedRole) {
         log.debug("Generating new JWT Refresh Token for user [{}]", userDetails.getUsername());
-        return buildToken(userDetails, refreshExpiration);
+        return buildToken(userDetails, refreshExpiration, requestedRole);
     }
 
     /**
      * Internal builder for constructing the token payload with roles and expiration.
      */
-    private String buildToken(UserDetails userDetails, long expiration) {
-        // 1. Extract the role from the UserDetails object
-        String role = userDetails.getAuthorities().stream()
-                .findFirst()
-                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
-                .orElse("ROLE_ATTENDEE");
+    private String buildToken(UserDetails userDetails, long expiration,Role requestedRole) {
 
-        log.debug("Building JWT payload for user [{}] assigning role [{}]", userDetails.getUsername(), role);
+        log.debug("Building JWT payload for user [{}] assigning role [{}]", userDetails.getUsername(), requestedRole.name());
 
         return Jwts.builder()
                 .subject(userDetails.getUsername())
-                .claim("role", role)
+                .claim("role", "ROLE_" + requestedRole.name())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
@@ -110,7 +106,7 @@ public class JwtTokenProvider {
      * Note: This will throw Exceptions (like ExpiredJwtException or SignatureException)
      * if the token is tampered with or expired, which will be caught by the Security Filter.
      */
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         try {
             final Claims claims = Jwts.parser()
                     .verifyWith(getSigningKey())

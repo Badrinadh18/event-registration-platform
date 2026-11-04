@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
@@ -18,8 +19,9 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Maps your Role enum (e.g., ADMIN) to Spring's format (ROLE_ADMIN)
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
-    }
+        return user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .collect(Collectors.toList());    }
 
     @Override
     public String getPassword() {

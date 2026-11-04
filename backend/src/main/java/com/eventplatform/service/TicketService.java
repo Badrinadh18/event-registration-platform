@@ -2,15 +2,18 @@ package com.eventplatform.service;
 
 import com.eventplatform.dto.response.TicketResponse;
 import com.eventplatform.exception.ResourceNotFoundException;
+import com.eventplatform.model.Event;
 import com.eventplatform.model.Registration;
 import com.eventplatform.model.Ticket;
 import com.eventplatform.model.enums.TicketStatus;
 import com.eventplatform.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,12 +60,12 @@ public class TicketService {
     }
 
     /**
-     * Event-day scanner logic. Validates the QR token, ensures Organiser ownership,
+     * Event-day scanner logic. Validates the QR token, ensures Organiser ownership(or Admin override),
      * and prevents double-entry.
      */
     @Transactional
-    public String checkInAttendee(String qrToken, String organiserEmail) {
-        log.debug("Organiser [{}] is attempting to scan ticket token [{}]", organiserEmail, qrToken);
+    public String checkInAttendee(String qrToken, String scannerEmail, Collection<? extends GrantedAuthority> authorities) {
+        log.debug("User [{}] is attempting to scan ticket token [{}]", scannerEmail, qrToken);
 
         Ticket ticket = ticketRepository.findByToken(qrToken)
                 .orElseThrow(() -> {
@@ -70,29 +73,40 @@ public class TicketService {
                     return new ResourceNotFoundException("Invalid Ticket QR Code.");
                 });
 
-        // Validate Ownership
-        if (!ticket.getRegistration().getEvent().getOrganiser().getEmail().equals(organiserEmail)) {
-            log.warn("SECURITY INCIDENT: Organiser [{}] attempted to scan a ticket for Event [{}] which they do not own.",
-                    organiserEmail, ticket.getRegistration().getEvent().getEventId());
+        Event event = ticket.getRegistration().getEvent();
+
+        // Block scanner if event is suppressed
+        if (event.isSuppressed()) {
+            log.warn("Check-in denied: Event [{}] is suppressed. Scanner locked.", event.getEventId());
+            throw new IllegalStateException("This event has been suppressed by an Administrator. Ticket scanning is currently disabled.");
+        }
+
+        // 1. Validate Ownership (Allow Admins OR the actual Organiser)
+        boolean isAdmin = authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isOwner = ticket.getRegistration().getEvent().getOrganiser().getEmail().equals(scannerEmail);
+        
+        if (!isAdmin && !isOwner) {
+            log.warn("SECURITY INCIDENT: User [{}] attempted to scan a ticket for Event [{}] which they do not own.",
+                    scannerEmail, ticket.getRegistration().getEvent().getEventId());
             throw new SecurityException("You are not authorized to scan tickets for this event.");
         }
 
         if (ticket.getStatus() == TicketStatus.CANCELLED) {
-            log.warn("Check-in denied: Organiser [{}] scanned a CANCELLED ticket [{}]", organiserEmail, qrToken);
+            log.warn("Check-in denied: User [{}] scanned a CANCELLED ticket [{}]", scannerEmail, qrToken);
             throw new IllegalStateException("This ticket has been cancelled and is invalid.");
         }
 
         // Idempotency: Double-scans return a success code with a distinct message, preventing scanner crash loops
         if (ticket.getStatus() == TicketStatus.USED) {
             log.warn("Check-in alert: Double-scan detected for Ticket [{}] by Organiser [{}]. Attendee already inside.",
-                    qrToken, organiserEmail);
+                    qrToken, scannerEmail);
             return "Ticket already scanned. Attendee is already checked in.";
         }
 
         ticket.setStatus(TicketStatus.USED);
         ticketRepository.save(ticket);
 
-        log.info("Check-in SUCCESS: Ticket [{}] verified and marked as USED by Organiser [{}]", qrToken, organiserEmail);
+        log.info("Check-in SUCCESS: Ticket [{}] verified and marked as USED by Organiser [{}]", qrToken, scannerEmail);
         return "Check-in successful! Ticket verified.";
     }
 

@@ -21,7 +21,7 @@ public class TicketController {
     @PostMapping("/check-in")
     @PreAuthorize("hasAnyRole('ORGANISER', 'ADMIN')")
     public ResponseEntity<String> scanTicket(@RequestParam String token, Authentication authentication) {
-        String response = ticketService.checkInAttendee(token, authentication.getName());
+        String response = ticketService.checkInAttendee(token, authentication.getName(),authentication.getAuthorities());
         return ResponseEntity.ok(response);
     }
 

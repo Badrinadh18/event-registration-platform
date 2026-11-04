@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -62,5 +64,11 @@ public class EventController {
     public ResponseEntity<String> deleteEvent(@PathVariable UUID id, Authentication auth) {
         eventService.softDeleteEvent(id, auth.getName());
         return ResponseEntity.ok("Event deleted");
+    }
+
+    @GetMapping("/{eventId}/roster")
+    @PreAuthorize("hasAnyRole('ORGANISER', 'ADMIN')")
+    public ResponseEntity<List<java.util.Map<String, String>>> getEventRoster( @PathVariable UUID eventId, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(eventService.getEventAttendees(eventId, userDetails.getUsername()));
     }
 }

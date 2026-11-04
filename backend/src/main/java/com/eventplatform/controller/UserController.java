@@ -14,7 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -27,7 +27,7 @@ public class UserController {
                         .userId(user.getUserId())
                         .name(user.getName())
                         .email(user.getEmail())
-                        .role(user.getRole().name())
+                        .roles(user.getRoles())
                         .isVerified(user.isVerified())
                         .build())
                 .toList();

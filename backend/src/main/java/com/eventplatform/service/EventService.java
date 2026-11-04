@@ -6,6 +6,7 @@ import com.eventplatform.model.Registration;
 import com.eventplatform.model.User;
 import com.eventplatform.model.enums.EventStatus;
 import com.eventplatform.model.enums.RegistrationStatus;
+import com.eventplatform.model.enums.Role;
 import com.eventplatform.repository.EventRepository;
 import com.eventplatform.repository.RegistrationRepository;
 import com.eventplatform.repository.UserRepository;
@@ -160,8 +161,10 @@ public class EventService {
         User requestingUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new SecurityException("User not found"));
 
-        if (requestingUser.getRole() != com.eventplatform.model.enums.Role.ADMIN &&
-                !event.getOrganiser().getEmail().equals(email)) {
+        boolean isAdmin = requestingUser.getRoles().contains(Role.ADMIN);
+        boolean isOwner = event.getOrganiser().getEmail().equals(email);
+
+        if (!isAdmin && !isOwner) {
 
             // SECURITY AUDIT LOG: Someone is trying to modify an event they don't own
             log.warn("SECURITY INCIDENT: User [{}] attempted unauthorized access to modify Event [{}]", email, eventId);
@@ -177,5 +180,25 @@ public class EventService {
     public List<Event> getAllEvents() {
         log.debug("Fetching all public events for directory view.");
         return eventRepository.findAll();
+    }
+
+    /**
+     * Retrieves the complete roster of attendees for a specific event.
+     * Secured: Only the event organiser or an Admin can access this.
+     */
+    public List<java.util.Map<String, String>> getEventAttendees(UUID eventId, String email) { // <-- Changed Object to String
+        // 1. Validates ownership automatically!
+        Event event = getOrganiserEvent(eventId, email);
+
+        // 2. Fetch all registrations
+        List<Registration> registrations = registrationRepository.findByEvent_EventId(eventId);
+
+        // 3. Map safely to a secure response (No passwords or sensitive data)
+        return registrations.stream().map(reg -> java.util.Map.of(
+                "registrationId", reg.getRegistrationId().toString(),
+                "name", reg.getUser().getName(),
+                "email", reg.getUser().getEmail(),
+                "status", reg.getStatus().name()
+        )).collect(java.util.stream.Collectors.toList());
     }
 }

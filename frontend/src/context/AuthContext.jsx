@@ -5,33 +5,34 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true); // NEW: Added loading state
 
-    // Helper function to extract and format the role from Spring Boot's JWT
+    // Helper function to extract the explicitly scoped role from our backend JWT
     const extractUserFromToken = (token) => {
-        const decoded = jwtDecode(token);
-        console.log("Decoded JWT Payload:", decoded); // Lets you see the exact token structure in your browser console
+        try {
+            const decoded = jwtDecode(token);
+            // Our backend embeds exactly one scoped role like: "ROLE_ORGANISER"
+            const rawRole = decoded.role || 'ROLE_ATTENDEE'; 
+            const formattedRole = rawRole.replace('ROLE_', '');
 
-        // Spring Security often uses 'authorities' or 'roles' as arrays
-        let rawRole = decoded.role;
-        if (!rawRole && decoded.authorities && decoded.authorities.length > 0) {
-            rawRole = decoded.authorities[0].authority || decoded.authorities[0];
+            return { email: decoded.sub, role: formattedRole };
+        } catch (error) {
+            console.error("Failed to decode token", error);
+            return null;
         }
-        
-        // Clean up the string (e.g., convert "ROLE_ORGANISER" to "ORGANISER")
-        const formattedRole = rawRole ? rawRole.replace('ROLE_', '') : 'ATTENDEE';
-
-        return { email: decoded.sub, role: formattedRole };
     };
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (token) {
-            try {
-                setUser(extractUserFromToken(token));
-            } catch (e) {
+            const extractedUser = extractUserFromToken(token);
+            if (extractedUser) {
+                setUser(extractedUser);
+            } else {
                 localStorage.removeItem('accessToken');
             }
         }
+        setLoading(false); // NEW: Tell the app we finished checking for the token
     }, []);
 
     const login = (token, refreshToken) => {
@@ -48,7 +49,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        // NEW: Expose loading to the rest of the app
+        <AuthContext.Provider value={{ user, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

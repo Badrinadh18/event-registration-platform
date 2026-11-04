@@ -2,6 +2,7 @@ package com.eventplatform.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -60,7 +61,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
         // Obfuscate the exact reason to prevent user enumeration attacks
         log.warn("Authentication Failed: Bad credentials provided.");
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid password.");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -115,6 +116,24 @@ public class GlobalExceptionHandler {
         // This is how we debug server crashes without exposing internal architecture details to the frontend.
         log.error("CRITICAL UNEXPECTED ERROR: {}", ex.getMessage(), ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Please try again later.");
+    }
+
+
+    /**
+     * Specifically catches when the Redis Docker container is down or unreachable.
+     * Prevents a generic 500 error and sends a clear message to the frontend UI.
+     */
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    public ResponseEntity<Map<String,String>> handleRedisConnectionFailure(RedisConnectionFailureException ex) {
+        log.error("CRITICAL: Redis connection failed. Dependent services (email tokens, auth) are degraded.", ex);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Service Unavailable");
+        response.put("message", "Our secure notification system is temporarily offline. We cannot send emails right now. Please try again in a few minutes.");
+
+        // Returning 503 (Service Unavailable) allows the frontend forms (like Login/Register)
+        // to gracefully catch this and display the message in the red alert box.
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     // --- Internal Helper Method ---

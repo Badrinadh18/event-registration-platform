@@ -1,6 +1,7 @@
 package com.eventplatform.repository;
 
 import com.eventplatform.model.User;
+import com.eventplatform.model.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -25,4 +26,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * before securing their tickets.
      */
     List<User> findByEmailIn(List<String> emails);
+
+    /**
+     * Used by the Admin Dashboard to fetch staff/management users.
+     * Uses 'Distinct' to prevent duplicate rows since roles are stored in a separate collection table.
+     */
+    List<User> findDistinctByRolesIn(java.util.Collection<Role> roles);
 }

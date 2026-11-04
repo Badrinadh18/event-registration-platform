@@ -2,6 +2,7 @@ package com.eventplatform.service;
 
 import com.eventplatform.model.Registration;
 import com.eventplatform.model.User;
+import com.eventplatform.model.enums.Role;
 import com.eventplatform.repository.RegistrationRepository;
 import com.eventplatform.repository.TeamRegistrationRepository;
 import com.eventplatform.repository.TicketRepository;
@@ -88,5 +89,65 @@ public class UserService {
         // 6. Finally, delete the user
         userRepository.delete(user);
         log.info("User [{}] (Email: [{}]) has been permanently deleted from the system.", userId, user.getEmail());
+    }
+
+    /**
+     * Admin Action: Fetches all users who are Admins or Organisers.
+     */
+    @Transactional(readOnly = true)
+    public List<User> getManagementUsers() {
+        log.debug("Fetching management users (Admins/Organisers) for the admin dashboard.");
+        return userRepository.findDistinctByRolesIn(java.util.List.of(Role.ADMIN, Role.ORGANISER));
+    }
+
+    /**
+     * Admin Action: Grants an additional role to an existing user.
+     */
+    @Transactional
+    public void grantRole(String targetEmail, Role newRole, String adminEmail) {
+        log.info("Admin [{}] is attempting to grant role [{}] to User [{}]", adminEmail, newRole, targetEmail);
+
+        User user = userRepository.findByEmail(targetEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + targetEmail));
+
+        if (user.getRoles().contains(newRole)) {
+            throw new IllegalStateException("User already possesses the " + newRole + " role.");
+        }
+
+        user.getRoles().add(newRole);
+        userRepository.save(user);
+
+        log.info("Successfully granted role [{}] to User [{}]", newRole, targetEmail);
+    }
+
+    /**
+     * Admin Action: Revokes a role. If a user loses ORGANISER/ADMIN, they fall back to ATTENDEE.
+     * This acts as the "delete user from admin dashboard" function you requested.
+     */
+    @Transactional
+    public void revokeRole(String targetEmail, Role roleToRemove, String adminEmail) {
+        log.info("Admin [{}] is revoking role [{}] from User [{}]", adminEmail, roleToRemove, targetEmail);
+
+        if (roleToRemove == Role.ATTENDEE) {
+            throw new IllegalArgumentException("Cannot revoke the base ATTENDEE role. If you want to remove the user entirely, use the hard delete function.");
+        }
+
+        User user = userRepository.findByEmail(targetEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + targetEmail));
+
+        if (!user.getRoles().contains(roleToRemove)) {
+            throw new IllegalStateException("User does not possess the " + roleToRemove + " role.");
+        }
+
+        user.getRoles().remove(roleToRemove);
+
+        // Failsafe: Ensure the user always has at least the ATTENDEE role so they aren't locked out of their purchased tickets
+        if (user.getRoles().isEmpty()) {
+            user.getRoles().add(Role.ATTENDEE);
+        }
+
+        userRepository.save(user);
+
+        log.info("Successfully revoked role [{}] from User [{}]", roleToRemove, targetEmail);
     }
 }

@@ -21,6 +21,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
+        //GLOBAL CRASH HANDLER: If the backend is completely dead/unreachable
+        if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+            if (window.location.pathname !== '/offline') {
+                window.location.href = '/offline';
+            }
+            return Promise.reject(error);
+        }
+
         const originalRequest = error.config;
         
         // If 401 and we haven't already tried to retry

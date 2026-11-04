@@ -56,6 +56,11 @@ public class RegistrationService {
             log.warn("Registration blocked: Event [{}] is in status [{}]", eventId, event.getStatus());
             throw new IllegalStateException("Event is not open for registration.");
         }
+        // Block new registrations if event is suppressed
+        if (event.isSuppressed()) {
+            log.warn("Registration blocked: Event [{}] is suppressed.", event.getEventId());
+            throw new IllegalStateException("Registration is currently unavailable for this event.");
+        }
 
         Registration registration = Registration.builder()
                 .user(user)
@@ -178,8 +183,21 @@ public class RegistrationService {
         members.forEach(m -> allUserIds.add(m.getUserId()));
 
         if (registrationRepository.existsByUser_UserIdInAndEvent_EventIdAndStatusNot(allUserIds, eventId, RegistrationStatus.CANCELLED)) {
-            log.warn("Team Registration blocked: A requested member is already registered for Event [{}]", eventId);
-            throw new DuplicateRegistrationException("The lead user or a team member is already registered or waitlisted for this event.");
+            // 2. If it fails, fetch the actual active registrations so we can name the culprits
+            List<Registration> activeRegs = registrationRepository.findByEvent_EventId(eventId).stream()
+                    .filter(reg -> allUserIds.contains(reg.getUser().getUserId()))
+                    .filter(reg -> reg.getStatus() != RegistrationStatus.CANCELLED)
+                    .toList();
+
+            // 3. Extract their emails
+            List<String> alreadyRegisteredEmails = activeRegs.stream()
+                    .map(reg -> reg.getUser().getEmail())
+                    .distinct()
+                    .toList();
+            // 4. Throw the exact requested message
+            String emailsStr = String.join(", ", alreadyRegisteredEmails);
+            log.warn("Team Registration blocked: A requested members ["+emailsStr+"] are already registered for Event [{}]", eventId);
+            throw new DuplicateRegistrationException("The following lead user or a team members["+emailsStr+"] are already registered or waitlisted for this event.");
         }
 
         Event event = eventRepository.findByIdForUpdate(eventId)
@@ -187,6 +205,12 @@ public class RegistrationService {
 
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new IllegalStateException("Event is not open for registration.");
+        }
+
+        //Block new registrations if event is suppressed
+        if (event.isSuppressed()) {
+            log.warn("Registration blocked: Event [{}] is suppressed.", event.getEventId());
+            throw new IllegalStateException("Registration is currently unavailable for this event.");
         }
 
         int totalSeatsRequired = 1 + members.size();
